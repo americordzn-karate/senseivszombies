@@ -6,11 +6,44 @@
 <title>SENSEI VS ZOMBIES</title>
 <style>
 body{margin:0;background:#111;color:#fff;font-family:Arial,sans-serif;text-align:center}
-#top{display:flex;justify-content:space-around;background:#222;padding:10px;font-weight:bold}
+#top{
+display:flex;
+justify-content:space-around;
+background:#111;
+padding:18px;
+font-weight:bold;
+font-size:34px;
+border-bottom:4px solid #444;
+box-shadow:0 4px 12px rgba(0,0,0,.5);
+}
 #game{background:#87ceeb;display:block;margin:auto;border-top:4px solid #444}
-#controls{display:flex;gap:10px;padding:10px;justify-content:center}
-button{padding:14px 20px;font-size:18px;font-weight:bold}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center}
+#controls{
+display:flex;
+gap:30px;
+padding:20px;
+justify-content:center;
+background:#1a1a1a;
+}
+
+#jumpBtn,#shootBtn{
+width:160px;
+height:160px;
+border-radius:50%;
+font-size:26px;
+font-weight:bold;
+border:none;
+box-shadow:0 6px 15px rgba(0,0,0,.5);
+}
+.overlay{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.90);
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+font-size:34px;
+}
 .hidden{display:none}
 </style>
 </head>
@@ -20,10 +53,19 @@ button{padding:14px 20px;font-size:18px;font-weight:bold}
 <div>🪙 <span id="coins">0</span></div>
 <div>⭐ <span id="stars">10</span></div>
 </div>
-<canvas id="game" width="900" height="350"></canvas>
+<canvas id="game" width="1200" height="500"></canvas>
 <div id="controls">
-<button id="jumpBtn">SALTAR</button>
-<button id="shootBtn">SHURIKEN</button>
+<button id="jumpBtn">
+⬆️
+<br>
+SALTAR
+</button>
+
+<button id="shootBtn">
+⭐
+<br>
+SHURIKEN
+</button>
 </div>
 
 <div id="start" class="overlay">
@@ -72,9 +114,34 @@ const c=document.getElementById("game"),ctx=c.getContext("2d");
 let running=false,timeLeft=60,coins=0,stars=10,speed=4,jumps=0,score=0;
 let sensei,objs=[],shots=[],spawn=0,last=0;
 
+function beep(freq,duration){
+
+const audioCtx =
+new (window.AudioContext||window.webkitAudioContext)();
+
+const osc = audioCtx.createOscillator();
+
+const gain = audioCtx.createGain();
+
+osc.connect(gain);
+
+gain.connect(audioCtx.destination);
+
+osc.frequency.value=freq;
+
+osc.start();
+
+gain.gain.exponentialRampToValueAtTime(
+0.0001,
+audioCtx.currentTime+duration
+);
+
+osc.stop(audioCtx.currentTime+duration);
+}
+ 
 function resetGame(){
  timeLeft=60;coins=0;stars=10;speed=4;objs=[];shots=[];jumps=0;
- sensei={x:80,y:250,w:40,h:40,vy:0};
+ sensei={x:80,y:250,w:100,h:100,vy:0};
  updateUI();
 }
 function updateUI(){
@@ -98,9 +165,11 @@ startBtn.onclick=startGame;
 playAgain.onclick=()=>location.reload();
 
 jumpBtn.onclick=()=>{
+ beep(500,0.08);
  if(jumps<2){sensei.vy=-11;jumps++;}
 };
 shootBtn.onclick=()=>{
+ beep(250,0.05);
  if(stars>0 && shots.length<2){
    stars--; updateUI();
    shots.push({x:sensei.x+30,y:sensei.y+20});
@@ -115,7 +184,14 @@ function addObject(){
  else if(r<.7)t="cactus";
  else if(r<.85)t="fire";
  else t="coin";
- objs.push({type:t,x:c.width+20,y:t==="coin"?150+Math.random()*100:250,w:35,h:35,b:0});
+ objs.push({
+type:t,
+x:c.width+50,
+y:t==="coin"?120+Math.random()*180:250,
+w:t==="fire"?55:90,
+h:t==="fire"?55:90,
+b:0
+});
 }
 
 function hit(a,b){
@@ -125,7 +201,13 @@ function hit(a,b){
 function finish(win){
  running=false;
  score=win?(coins*stars):coins;
- result.textContent=`Monedas: ${coins} | Shuriken: ${stars} | Puntos: ${score}`;
+ result.innerHTML=
+`
+🏆 RESULTADO FINAL<br><br>
+🪙 Monedas: ${coins}<br>
+⭐ Shuriken: ${stars}<br>
+🎯 Puntos: ${score}
+`;
  end.classList.remove("hidden");
 
  fetch(WEB_APP_URL,{
@@ -148,6 +230,25 @@ function loop(ts){
  let dt=(ts-last)/16.67; last=ts;
  ctx.clearRect(0,0,c.width,c.height);
 
+let sueloOffset=(performance.now()/8)%80;
+
+ctx.fillStyle="#76b852";
+ctx.fillRect(0,320,c.width,180);
+
+ctx.font="70px serif";
+
+for(let i=0;i<8;i++){
+ctx.fillText("🌳",i*180-sueloOffset,320);
+}
+
+for(let i=0;i<5;i++){
+ctx.fillText("⛰️",i*260-(sueloOffset*0.4),200);
+}
+
+for(let i=0;i<6;i++){
+ctx.fillText("☁️",i*220-(sueloOffset*0.2),80);
+}
+ 
  spawn-=dt;
  if(spawn<=0){ addObject(); spawn=(120+Math.random()*120); }
 
@@ -155,13 +256,22 @@ function loop(ts){
  sensei.y+=sensei.vy;
  if(sensei.y>=250){sensei.y=250;sensei.vy=0;jumps=0;}
 
- ctx.font="36px serif";
- ctx.fillText("🥋",sensei.x,sensei.y+35);
+ ctx.font="90px serif";
+
+if(Math.floor(performance.now()/150)%2===0){
+ctx.fillText("🥋",sensei.x,sensei.y+80);
+}else{
+ctx.fillText("🏃",sensei.x,sensei.y+80);
+}
 
  shots.forEach(s=>s.x+=10*dt);
  shots=shots.filter(s=>s.x<c.width);
 
- shots.forEach(s=>{ctx.fillText("⭐",s.x,s.y);});
+ ctx.font="45px serif";
+
+shots.forEach(s=>{
+ctx.fillText("⭐",s.x,s.y);
+});
 
  objs.forEach(o=>{
    o.x-=speed*dt;
@@ -171,13 +281,15 @@ function loop(ts){
 
    if(hit({x:sensei.x,y:sensei.y,w:40,h:40},o)){
       if(o.type==="coin"){
-        coins++; stars+=2; speed*=1.05; updateUI(); o.dead=true;
+        coins++; stars+=1; speed*=1.05; updateUI(); o.dead=true;
       }else finish(false);
    }
 
    shots.forEach(s=>{
      if(hit({x:s.x,y:s.y,w:20,h:20},o)){
-       if(o.type==="zombie"||o.type==="ninja"){o.dead=true;}
+       if(o.type==="zombie"||o.type==="ninja"){
+        beep(140,0.12);
+        o.dead=true;}
      }
    });
 
