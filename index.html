@@ -1,1 +1,192 @@
-En construcción
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SENSEI VS ZOMBIES</title>
+<style>
+body{margin:0;background:#111;color:#fff;font-family:Arial,sans-serif;text-align:center}
+#top{display:flex;justify-content:space-around;background:#222;padding:10px;font-weight:bold}
+#game{background:#87ceeb;display:block;margin:auto;border-top:4px solid #444}
+#controls{display:flex;gap:10px;padding:10px;justify-content:center}
+button{padding:14px 20px;font-size:18px;font-weight:bold}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div id="top">
+<div>⏱ <span id="time">60</span></div>
+<div>🪙 <span id="coins">0</span></div>
+<div>⭐ <span id="stars">10</span></div>
+</div>
+<canvas id="game" width="900" height="350"></canvas>
+<div id="controls">
+<button id="jumpBtn">SALTAR</button>
+<button id="shootBtn">SHURIKEN</button>
+</div>
+
+<div id="start" class="overlay">
+<h1>SENSEI VS ZOMBIES</h1>
+<p id="welcome"></p>
+<button id="startBtn" disabled>Verificando...</button>
+</div>
+
+<div id="end" class="overlay hidden">
+<h2>Fin del juego</h2>
+<p id="result"></p>
+<button id="playAgain">Volver a jugar</button>
+<button id="portal">Regresar al portal</button>
+</div>
+
+<script>
+const WEB_APP_URL="https://script.google.com/macros/s/AKfycbwX5w8iiwkJVbGtpz-5f20U9jue2MC0vouE3blkHXo9CIMqg9bvCZrAYE8WKxH4gXGWzg/exec";
+const PORTAL="https://americordzn-karate.github.io/retos/";
+let params=new URLSearchParams(location.search);
+let player=params.get("nombre")||"Invitado";
+let edad=params.get("edad")||"";
+let reto=params.get("reto")||"SENSEI VS ZOMBIES";
+let estatura=params.get("estatura")||"";
+let peso=params.get("peso")||"";
+document.getElementById("welcome").textContent="Karateca: "+player;
+
+let intentosHoy=0, limite=999;
+async function verificar(){
+ try{
+  let r=await fetch(WEB_APP_URL);
+  let d=await r.json();
+  let rc=(d.retos||[]).find(x=>x.nombre.trim().toUpperCase()===reto.toUpperCase());
+  limite=rc?parseInt(rc.diario_permitido):999;
+  let k=player+"_"+reto;
+  intentosHoy=(d.intentosHoy&&d.intentosHoy[k])?parseInt(d.intentosHoy[k]):0;
+  let b=document.getElementById("startBtn");
+  if(intentosHoy>=limite){b.textContent="Límite alcanzado";b.disabled=true;}
+  else {b.textContent="INICIAR";b.disabled=false;}
+ }catch(e){
+  startBtn.textContent="INICIAR";startBtn.disabled=false;
+ }
+}
+verificar();
+
+const c=document.getElementById("game"),ctx=c.getContext("2d");
+let running=false,timeLeft=60,coins=0,stars=10,speed=4,jumps=0,score=0;
+let sensei,objs=[],shots=[],spawn=0,last=0;
+
+function resetGame(){
+ timeLeft=60;coins=0;stars=10;speed=4;objs=[];shots=[];jumps=0;
+ sensei={x:80,y:250,w:40,h:40,vy:0};
+ updateUI();
+}
+function updateUI(){
+ time.textContent=timeLeft;
+ coinsEl=document.getElementById("coins"); coinsEl.textContent=coins;
+ starsEl=document.getElementById("stars"); starsEl.textContent=stars;
+}
+function startGame(){
+ resetGame();
+ running=true;
+ start.classList.add("hidden");
+ last=performance.now();
+ requestAnimationFrame(loop);
+ let timer=setInterval(()=>{
+   if(!running){clearInterval(timer);return;}
+   timeLeft--; updateUI();
+   if(timeLeft<=0) finish(true);
+ },1000);
+}
+startBtn.onclick=startGame;
+playAgain.onclick=()=>location.reload();
+
+jumpBtn.onclick=()=>{
+ if(jumps<2){sensei.vy=-11;jumps++;}
+};
+shootBtn.onclick=()=>{
+ if(stars>0 && shots.length<2){
+   stars--; updateUI();
+   shots.push({x:sensei.x+30,y:sensei.y+20});
+ }
+};
+
+function addObject(){
+ if(objs.length>=2)return;
+ let r=Math.random(),t="zombie";
+ if(r<.25)t="zombie";
+ else if(r<.5)t="ninja";
+ else if(r<.7)t="cactus";
+ else if(r<.85)t="fire";
+ else t="coin";
+ objs.push({type:t,x:c.width+20,y:t==="coin"?150+Math.random()*100:250,w:35,h:35,b:0});
+}
+
+function hit(a,b){
+ return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+}
+
+function finish(win){
+ running=false;
+ score=win?(coins*stars):coins;
+ result.textContent=`Monedas: ${coins} | Shuriken: ${stars} | Puntos: ${score}`;
+ end.classList.remove("hidden");
+
+ fetch(WEB_APP_URL,{
+   method:"POST",mode:"no-cors",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({nombre_alumno:player,nombre_reto:reto,puntos:score})
+ });
+
+ if(intentosHoy+1>=limite){
+   playAgain.disabled=true;
+ }
+}
+
+portal.onclick=()=>{
+ location.href=PORTAL+"?nombre="+encodeURIComponent(player)+"&edad="+edad+"&reto="+encodeURIComponent(reto)+"&estatura="+estatura+"&peso="+peso;
+};
+
+function loop(ts){
+ if(!running)return;
+ let dt=(ts-last)/16.67; last=ts;
+ ctx.clearRect(0,0,c.width,c.height);
+
+ spawn-=dt;
+ if(spawn<=0){ addObject(); spawn=(120+Math.random()*120); }
+
+ sensei.vy+=0.6;
+ sensei.y+=sensei.vy;
+ if(sensei.y>=250){sensei.y=250;sensei.vy=0;jumps=0;}
+
+ ctx.font="36px serif";
+ ctx.fillText("🥋",sensei.x,sensei.y+35);
+
+ shots.forEach(s=>s.x+=10*dt);
+ shots=shots.filter(s=>s.x<c.width);
+
+ shots.forEach(s=>{ctx.fillText("⭐",s.x,s.y);});
+
+ objs.forEach(o=>{
+   o.x-=speed*dt;
+   if(o.type==="fire"){o.b+=0.08*dt;o.y=250+Math.sin(o.b)*40;}
+   let emoji={zombie:"🧟",ninja:"🥷",cactus:"🌵",fire:"🔥",coin:"🪙"}[o.type];
+   ctx.fillText(emoji,o.x,o.y+35);
+
+   if(hit({x:sensei.x,y:sensei.y,w:40,h:40},o)){
+      if(o.type==="coin"){
+        coins++; stars+=2; speed*=1.05; updateUI(); o.dead=true;
+      }else finish(false);
+   }
+
+   shots.forEach(s=>{
+     if(hit({x:s.x,y:s.y,w:20,h:20},o)){
+       if(o.type==="zombie"||o.type==="ninja"){o.dead=true;}
+     }
+   });
+
+   if(o.x<-50)o.dead=true;
+ });
+ objs=objs.filter(o=>!o.dead);
+
+ requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
