@@ -186,7 +186,7 @@ function resetGame(){
  timeLeft=60;coins=0;stars=10;speed=4;objs=[];shots=[];jumps=0;
  sensei={
     x:60,
-    y:270,
+    y:300,
     w:100,
     h:100,
     vy:0
@@ -215,13 +215,13 @@ playAgain.onclick=()=>location.reload();
 
 jumpBtn.onclick=()=>{
  beep(500,0.08);
- if(jumps<2){sensei.vy=-11;jumps++;}
+ if(jumps<2){sensei.vy=-14;jumps++;}
 };
 shootBtn.onclick=()=>{
  beep(250,0.05);
  if(stars>0 && shots.length<2){
    stars--; updateUI();
-   shots.push({x:sensei.x+30,y:sensei.y+20});
+   shots.push({x:sensei.x+50,y:sensei.y+55});
  }
 };
 
@@ -245,7 +245,7 @@ w:
         :
         t==="coin"
             ?100
-            :120,
+            :100,
 
 h:
     t==="fire"
@@ -253,7 +253,7 @@ h:
         :
         t==="coin"
             ?100
-            :120,
+            :100,
 b:0
 });
 }
@@ -318,15 +318,15 @@ ctx.fillText("☁️",i*220-(sueloOffset*0.2),80);
  spawn-=dt;
  if(spawn<=0){ addObject(); spawn=(120+Math.random()*120); }
 
- sensei.vy+=0.6;
+ sensei.vy+=0.45;
  sensei.y+=sensei.vy;
- if(sensei.y>=270){sensei.y=250;sensei.vy=0;jumps=0;}
+ if(sensei.y>=300){sensei.y=250;sensei.vy=0;jumps=0;}
 
  ctx.font="90px serif";
 
 ctx.fillText("🥋",sensei.x,sensei.y+80);
 
- shots.forEach(s=>s.x+=10*dt);
+ shots.forEach(s=>s.x+=14*dt);
  shots=shots.filter(s=>s.x<c.width);
 
  ctx.font="45px serif";
@@ -341,15 +341,15 @@ ctx.fillText("⭐",s.x,s.y);
    let emoji={zombie:"🧟",ninja:"🥷",cactus:"🌵",fire:"🔥",coin:"🪙"}[o.type];
    if(o.type==="zombie"){
 
-    ctx.font="120px serif";
+    ctx.font="135px serif";
 
 }else if(o.type==="ninja"){
 
-    ctx.font="120px serif";
+    ctx.font="135px serif";
 
 }else if(o.type==="cactus"){
 
-    ctx.font="120px serif";
+    ctx.font="110px serif";
 
 }else if(o.type==="coin"){
 
@@ -370,10 +370,10 @@ ctx.fillText(
    if(
     hit(
         {
-            x:sensei.x+10,
-            y:sensei.y+10,
-            w:80,
-            h:80
+            x:sensei.x+15,
+            y:sensei.y+15,
+            w:70,
+            h:70
         },
         o
     )
