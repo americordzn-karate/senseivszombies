@@ -10,19 +10,22 @@ body{margin:0;background:#111;color:#fff;font-family:Arial,sans-serif;text-align
 display:flex;
 justify-content:space-around;
 background:#111;
-padding:18px;
+padding:20px;
 font-weight:bold;
-font-size:34px;
+font-size:42px;
 border-bottom:4px solid #444;
 box-shadow:0 4px 12px rgba(0,0,0,.5);
 }
-#game{background:#87ceeb;display:block;margin:auto;border-top:4px solid #444}
+#game{background:#87ceeb;display:block;width:100%;
+height:auto;
+max-height:55vh;
+margin:auto;margin:auto;border-top:4px solid #444}
 #controls{
 display:flex;
-gap:30px;
-padding:20px;
-justify-content:center;
-background:#1a1a1a;
+justify-content:space-between;
+padding:15px 25px;
+width:100%;
+box-sizing:border-box;
 }
 
 #jumpBtn,#shootBtn{
@@ -53,7 +56,7 @@ font-size:34px;
 <div>🪙 <span id="coins">0</span></div>
 <div>⭐ <span id="stars">10</span></div>
 </div>
-<canvas id="game" width="1200" height="500"></canvas>
+<canvas id="game" width="900" height="420"></canvas>
 <div id="controls">
 <button id="jumpBtn">
 ⬆️
@@ -187,7 +190,9 @@ function addObject(){
  objs.push({
 type:t,
 x:c.width+50,
-y:t==="coin"?120+Math.random()*180:250,
+y:t==="coin"
+ ?120+Math.random()*120
+ :290,
 w:t==="fire"?55:90,
 h:t==="fire"?55:90,
 b:0
@@ -237,9 +242,6 @@ ctx.fillRect(0,320,c.width,180);
 
 ctx.font="70px serif";
 
-for(let i=0;i<8;i++){
-ctx.fillText("🌳",i*180-sueloOffset,320);
-}
 
 for(let i=0;i<5;i++){
 ctx.fillText("⛰️",i*260-(sueloOffset*0.4),200);
@@ -258,11 +260,7 @@ ctx.fillText("☁️",i*220-(sueloOffset*0.2),80);
 
  ctx.font="90px serif";
 
-if(Math.floor(performance.now()/150)%2===0){
 ctx.fillText("🥋",sensei.x,sensei.y+80);
-}else{
-ctx.fillText("🏃",sensei.x,sensei.y+80);
-}
 
  shots.forEach(s=>s.x+=10*dt);
  shots=shots.filter(s=>s.x<c.width);
@@ -275,7 +273,7 @@ ctx.fillText("⭐",s.x,s.y);
 
  objs.forEach(o=>{
    o.x-=speed*dt;
-   if(o.type==="fire"){o.b+=0.08*dt;o.y=250+Math.sin(o.b)*40;}
+   if(o.type==="fire"){o.b+=0.08*dt;o.y=290+Math.sin(o.b)*25;}
    let emoji={zombie:"🧟",ninja:"🥷",cactus:"🌵",fire:"🔥",coin:"🪙"}[o.type];
    ctx.fillText(emoji,o.x,o.y+35);
 
